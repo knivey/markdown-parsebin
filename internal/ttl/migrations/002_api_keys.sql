@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS api_keys (
+    key         TEXT PRIMARY KEY,
+    description TEXT NOT NULL DEFAULT '',
+    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

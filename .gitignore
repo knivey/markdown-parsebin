@@ -1,0 +1,4 @@
+dave-web
+*.db
+*.db-journal
+opencode.json
