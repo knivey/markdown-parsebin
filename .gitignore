@@ -2,4 +2,6 @@
 /dave-web-new
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 opencode.json
