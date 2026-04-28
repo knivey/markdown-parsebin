@@ -1,0 +1,16 @@
+{{template "base.html" .}}
+
+{{define "content"}}
+<article class="paste-view">
+    <div class="paste-header">
+        <h1>{{.Title}}</h1>
+        <div class="paste-meta">
+            <span class="paste-date">Created: {{.Paste.CreatedAt.Format "2006-01-02 15:04:05"}}</span>
+            <a href="{{.RawURL}}" class="raw-link">raw</a>
+        </div>
+    </div>
+    <div class="paste-content">
+        {{.RenderedHTML}}
+    </div>
+</article>
+{{end}}

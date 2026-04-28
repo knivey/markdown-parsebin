@@ -1,0 +1,27 @@
+{{template "base.html" .}}
+
+{{define "content"}}
+<div class="dashboard">
+    <div class="dashboard-header">
+        <h1>dave-web</h1>
+        <p class="tagline">markdown pastebin</p>
+    </div>
+    {{if .Stats}}
+    <div class="stats-bar">
+        <div class="stat-card">
+            <span class="stat-value">{{.Stats.Total}}</span>
+            <span class="stat-label">total</span>
+        </div>
+        <div class="stat-card stat-active">
+            <span class="stat-value">{{.Stats.Active}}</span>
+            <span class="stat-label">active</span>
+        </div>
+        <div class="stat-card stat-expired">
+            <span class="stat-value">{{.Stats.Expired}}</span>
+            <span class="stat-label">expired</span>
+        </div>
+    </div>
+    {{end}}
+</div>
+
+{{end}}

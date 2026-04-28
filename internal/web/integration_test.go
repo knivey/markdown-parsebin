@@ -37,7 +37,7 @@ func integrationServer(t *testing.T, database *db.DB) *Server {
 	r := gin.New()
 	r.Use(gin.Recovery())
 
-	tmpl := `{{define "list.html"}}{{if .Pastes}}<table>{{range .Pastes}}<tr><td><a href="/p/{{.Slug}}">{{.Title}}</a></td><td>{{.CreatedAt}}</td><td>{{.ExpiresAt}}</td></tr>{{end}}</table>{{else}}<p>No pastes yet.</p>{{end}}{{end}}`
+	tmpl := `{{define "list.html"}}{{if .Stats}}<div class="stats-bar"><span>{{.Stats.Total}}</span><span>{{.Stats.Active}}</span><span>{{.Stats.Expired}}</span></div>{{end}}{{end}}`
 	tmpl += `{{define "view.html"}}<h1>{{.Title}}</h1><div>{{.RenderedHTML}}</div><a href="{{.RawURL}}">raw</a>{{end}}`
 	r.SetHTMLTemplate(template.Must(template.New("").Parse(tmpl)))
 
@@ -92,7 +92,7 @@ func TestIntegration_FullFlow(t *testing.T) {
 	req, _ = http.NewRequest("GET", "/", nil)
 	srv.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "Test Paste")
+	assert.Contains(t, w.Body.String(), "1")
 }
 
 func TestIntegration_UnauthCreate(t *testing.T) {
@@ -153,7 +153,33 @@ func TestIntegration_ListEmpty(t *testing.T) {
 	srv.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "No pastes yet")
+	body := w.Body.String()
+	assert.Contains(t, body, "0")
+}
+
+func TestIntegration_ListShowsStats(t *testing.T) {
+	database := newIntegrationDB(t)
+	srv := integrationServer(t, database)
+
+	ak, err := database.CreateAPIKey("test")
+	require.NoError(t, err)
+
+	for i := 0; i < 3; i++ {
+		body := fmt.Sprintf(`{"content":"paste %d","title":"Paste %d"}`, i, i)
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/api/pastes", bytes.NewBufferString(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-API-Key", ak.Key)
+		srv.Router.ServeHTTP(w, req)
+		require.Equal(t, http.StatusCreated, w.Code)
+	}
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	srv.Router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "3")
 }
 
 func TestIntegration_RevokedKey(t *testing.T) {
@@ -223,10 +249,7 @@ func TestIntegration_MultiplePastes(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/", nil)
 	srv.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
-
-	for i := 0; i < 5; i++ {
-		assert.Contains(t, w.Body.String(), fmt.Sprintf("Paste %d", i))
-	}
+	assert.Contains(t, w.Body.String(), "5")
 }
 
 func TestIntegration_PasteWithEmptyTitle(t *testing.T) {
@@ -322,6 +345,5 @@ func TestIntegration_CreateWithTTL(t *testing.T) {
 	req, _ = http.NewRequest("GET", "/", nil)
 	srv.Router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "TTL Test")
-	assert.NotContains(t, w.Body.String(), "never")
+	assert.Contains(t, w.Body.String(), "1")
 }

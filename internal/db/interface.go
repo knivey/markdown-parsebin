@@ -8,6 +8,7 @@ type PasteStore interface {
 	ListPastes(limit int) ([]*models.Paste, error)
 	DeletePaste(id string) error
 	DeleteExpired() (int64, error)
+	CountPastes() (*PasteStats, error)
 }
 
 type APIKeyStore interface {

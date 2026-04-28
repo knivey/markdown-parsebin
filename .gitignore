@@ -1,4 +1,5 @@
-dave-web
+/dave-web
+/dave-web-new
 *.db
 *.db-journal
 opencode.json

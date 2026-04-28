@@ -6,8 +6,21 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/render"
 	"github.com/knivey/dave-web/internal/db"
 )
+
+type multiTemplate struct {
+	templates map[string]*template.Template
+}
+
+func (t *multiTemplate) Instance(name string, data interface{}) render.Render {
+	return render.HTML{
+		Template: t.templates[name],
+		Name:     name,
+		Data:     data,
+	}
+}
 
 type Server struct {
 	Router  *gin.Engine
@@ -16,15 +29,27 @@ type Server struct {
 }
 
 func NewServer(database db.Store, templateFS fs.FS, staticFS fs.FS, baseURL string) *Server {
-	tmpl := template.Must(template.ParseFS(templateFS, "*.html"))
-
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(gin.Logger())
 
-	r.SetHTMLTemplate(tmpl)
 	r.StaticFS("/static", http.FS(staticFS))
+
+	base := template.Must(template.ParseFS(templateFS, "base.html"))
+
+	listBase, _ := base.Clone()
+	listTmpl := template.Must(listBase.ParseFS(templateFS, "list.html"))
+
+	viewBase, _ := base.Clone()
+	viewTmpl := template.Must(viewBase.ParseFS(templateFS, "view.html"))
+
+	r.HTMLRender = &multiTemplate{
+		templates: map[string]*template.Template{
+			"list.html": listTmpl,
+			"view.html": viewTmpl,
+		},
+	}
 
 	s := &Server{
 		Router:  r,

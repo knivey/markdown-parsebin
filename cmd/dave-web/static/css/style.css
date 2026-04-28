@@ -1,0 +1,251 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #1a1b26;
+    color: #c0caf5;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+nav {
+    background: #16161e;
+    border-bottom: 1px solid #292e42;
+    padding: 0.75rem 2rem;
+}
+
+nav .logo {
+    color: #7aa2f7;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+main {
+    max-width: 960px;
+    width: 100%;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    flex: 1;
+}
+
+footer {
+    text-align: center;
+    padding: 1rem;
+    color: #565f89;
+    font-size: 0.85rem;
+    border-top: 1px solid #292e42;
+}
+
+h1 {
+    color: #c0caf5;
+    margin-bottom: 1rem;
+}
+
+a {
+    color: #7aa2f7;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.paste-list {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.paste-list th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid #292e42;
+    color: #7aa2f7;
+}
+
+.paste-list td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #292e42;
+}
+
+.paste-list tr:hover {
+    background: #1f2335;
+}
+
+.paste-view .paste-header {
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #292e42;
+    padding-bottom: 1rem;
+}
+
+.paste-view .paste-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #565f89;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.paste-view .raw-link {
+    background: #292e42;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.paste-content {
+    line-height: 1.7;
+}
+
+.paste-content h1, .paste-content h2, .paste-content h3,
+.paste-content h4, .paste-content h5, .paste-content h6 {
+    color: #c0caf5;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.paste-content h1 { font-size: 1.8rem; }
+.paste-content h2 { font-size: 1.5rem; }
+.paste-content h3 { font-size: 1.25rem; }
+
+.paste-content p {
+    margin-bottom: 1rem;
+}
+
+.paste-content code {
+    background: #292e42;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.9em;
+    color: #f7768e;
+}
+
+.paste-content pre {
+    margin-bottom: 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+}
+
+.paste-content pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+}
+
+.paste-content blockquote {
+    border-left: 3px solid #7aa2f7;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: #565f89;
+}
+
+.paste-content ul, .paste-content ol {
+    margin: 1rem 0;
+    padding-left: 2rem;
+}
+
+.paste-content li {
+    margin-bottom: 0.25rem;
+}
+
+.paste-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.paste-content th, .paste-content td {
+    border: 1px solid #292e42;
+    padding: 0.5rem 0.75rem;
+}
+
+.paste-content th {
+    background: #292e42;
+}
+
+.paste-content img {
+    max-width: 100%;
+    border-radius: 6px;
+}
+
+.paste-content hr {
+    border: none;
+    border-top: 1px solid #292e42;
+    margin: 1.5rem 0;
+}
+
+.chroma {
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.dashboard {
+    margin-bottom: 2rem;
+}
+
+.dashboard-header {
+    margin-bottom: 1.5rem;
+}
+
+.dashboard-header h1 {
+    margin-bottom: 0.25rem;
+    font-size: 2rem;
+    color: #7aa2f7;
+}
+
+.tagline {
+    color: #565f89;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.stats-bar {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #16161e;
+    border: 1px solid #292e42;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    min-width: 100px;
+}
+
+.stat-card .stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #c0caf5;
+}
+
+.stat-card .stat-label {
+    font-size: 0.8rem;
+    color: #565f89;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+}
+
+.stat-active .stat-value {
+    color: #9ece6a;
+}
+
+.stat-expired .stat-value {
+    color: #f7768e;
+}
+
+.empty-message {
+    color: #565f89;
+    margin-top: 1rem;
+}

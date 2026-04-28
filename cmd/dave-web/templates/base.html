@@ -1,0 +1,102 @@
+{{define "base.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* Dracula theme inline for Chroma code blocks */
+        .chroma { background: #282a36; color: #f8f8f2; padding: 1em; border-radius: 6px; overflow-x: auto; }
+        .chroma .err { color: #ff5555 }
+        .chroma .lntd { vertical-align: top; padding: 0; margin: 0; border: 0; }
+        .chroma .lntable { border-spacing: 0; padding: 0; margin: 0; border: 0; width: 100%; overflow: auto; display: block; }
+        .chroma .hl { display: block; width: 100%; background: #44475a }
+        .chroma .lnt { padding: 0 0.8em; color: #6272a4 }
+        .chroma .ln { padding: 0 0.8em; color: #6272a4 }
+        .chroma .k { color: #ff79c6 }
+        .chroma .kc { color: #bd93f9 }
+        .chroma .kd { color: #ff79c6 }
+        .chroma .kn { color: #ff79c6 }
+        .chroma .kp { color: #ff79c6 }
+        .chroma .kr { color: #ff79c6 }
+        .chroma .kt { color: #8be9fd }
+        .chroma .n { color: #f8f8f2 }
+        .chroma .na { color: #50fa7b }
+        .chroma .nb { color: #8be9fd }
+        .chroma .bp { color: #8be9fd }
+        .chroma .nc { color: #bd93f9 }
+        .chroma .no { color: #bd93f9 }
+        .chroma .nd { color: #ff79c6 }
+        .chroma .ni { color: #ff79c6 }
+        .chroma .ne { color: #bd93f9 }
+        .chroma .nf { color: #50fa7b }
+        .chroma .fm { color: #50fa7b }
+        .chroma .nl { color: #8be9fd }
+        .chroma .nn { color: #f8f8f2 }
+        .chroma .nt { color: #ff79c6 }
+        .chroma .nv { color: #8be9fd }
+        .chroma .vc { color: #8be9fd }
+        .chroma .vg { color: #8be9fd }
+        .chroma .vi { color: #8be9fd }
+        .chroma .vm { color: #8be9fd }
+        .chroma .l { color: #bd93f9 }
+        .chroma .ld { color: #f1fa8c }
+        .chroma .s { color: #f1fa8c }
+        .chroma .sa { color: #f1fa8c }
+        .chroma .sb { color: #f1fa8c }
+        .chroma .sc { color: #f1fa8c }
+        .chroma .dl { color: #f1fa8c }
+        .chroma .sd { color: #f1fa8c }
+        .chroma .s2 { color: #f1fa8c }
+        .chroma .se { color: #bd93f9 }
+        .chroma .sh { color: #f1fa8c }
+        .chroma .si { color: #f1fa8c }
+        .chroma .sx { color: #f1fa8c }
+        .chroma .sr { color: #ff5555 }
+        .chroma .s1 { color: #f1fa8c }
+        .chroma .ss { color: #f1fa8c }
+        .chroma .m { color: #bd93f9 }
+        .chroma .mb { color: #bd93f9 }
+        .chroma .mf { color: #bd93f9 }
+        .chroma .mh { color: #bd93f9 }
+        .chroma .mi { color: #bd93f9 }
+        .chroma .il { color: #bd93f9 }
+        .chroma .mo { color: #bd93f9 }
+        .chroma .o { color: #ff79c6 }
+        .chroma .ow { color: #ff79c6 }
+        .chroma .p { color: #f8f8f2 }
+        .chroma .c { color: #6272a4 }
+        .chroma .ch { color: #6272a4 }
+        .chroma .cm { color: #6272a4 }
+        .chroma .c1 { color: #6272a4 }
+        .chroma .cs { color: #6272a4 }
+        .chroma .cp { color: #ff79c6 }
+        .chroma .cpf { color: #ff79c6 }
+        .chroma .gd { color: #ff5555 }
+        .chroma .ge { text-decoration: underline }
+        .chroma .gh { font-weight: bold; color: #bd93f9 }
+        .chroma .gi { color: #50fa7b }
+        .chroma .go { color: #6272a4 }
+        .chroma .gp { color: #ff79c6 }
+        .chroma .gs { font-weight: bold }
+        .chroma .gu { font-weight: bold; color: #bd93f9 }
+        .chroma .gt { color: #ff5555 }
+        .chroma .gl { text-decoration: underline }
+        .chroma .w { color: #f8f8f2 }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo">dave-web</a>
+    </nav>
+    <main>
+        {{template "content" .}}
+    </main>
+    <footer>
+        <p>powered by dave-web</p>
+    </footer>
+</body>
+</html>
+{{end}}

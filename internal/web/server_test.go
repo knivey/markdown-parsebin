@@ -23,7 +23,7 @@ func setupTestRouter(store db.Store) (*Server, *gin.Engine) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
 
-	tmpl := `{{define "list.html"}}{{if .Pastes}}<table>{{range .Pastes}}<tr><td>{{.Title}}</td><td>{{.ExpiresAt}}</td></tr>{{end}}</table>{{else}}<p>No pastes yet.</p>{{end}}{{end}}`
+	tmpl := `{{define "list.html"}}{{if .Stats}}<div class="stats-bar"><span>{{.Stats.Total}}</span><span>{{.Stats.Active}}</span><span>{{.Stats.Expired}}</span></div>{{end}}{{end}}`
 	tmpl += `{{define "view.html"}}<h1>{{.Title}}</h1><div>{{.RenderedHTML}}</div>{{end}}`
 	r.SetHTMLTemplate(template.Must(template.New("").Parse(tmpl)))
 
@@ -43,8 +43,8 @@ func setupTestRouter(store db.Store) (*Server, *gin.Engine) {
 
 func TestList_Empty(t *testing.T) {
 	mock := &testutil.MockStore{
-		ListPastesFunc: func(limit int) ([]*models.Paste, error) {
-			return nil, nil
+		CountPastesFunc: func() (*db.PasteStats, error) {
+			return &db.PasteStats{Total: 0, Active: 0, Expired: 0}, nil
 		},
 	}
 	_, r := setupTestRouter(mock)
@@ -54,15 +54,12 @@ func TestList_Empty(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "No pastes yet")
 }
 
-func TestList_WithPastes(t *testing.T) {
+func TestList_WithStats(t *testing.T) {
 	mock := &testutil.MockStore{
-		ListPastesFunc: func(limit int) ([]*models.Paste, error) {
-			return []*models.Paste{
-				{Slug: "abc", Title: "Test Paste", Content: "hello", CreatedAt: time.Now()},
-			}, nil
+		CountPastesFunc: func() (*db.PasteStats, error) {
+			return &db.PasteStats{Total: 5, Active: 3, Expired: 2}, nil
 		},
 	}
 	_, r := setupTestRouter(mock)
@@ -72,13 +69,16 @@ func TestList_WithPastes(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "Test Paste")
+	body := w.Body.String()
+	assert.Contains(t, body, "5")
+	assert.Contains(t, body, "3")
+	assert.Contains(t, body, "2")
 }
 
-func TestList_DBError(t *testing.T) {
+func TestList_StatsDBError(t *testing.T) {
 	mock := &testutil.MockStore{
-		ListPastesFunc: func(limit int) ([]*models.Paste, error) {
-			return nil, fmt.Errorf("db connection lost")
+		CountPastesFunc: func() (*db.PasteStats, error) {
+			return nil, fmt.Errorf("stats db error")
 		},
 	}
 	_, r := setupTestRouter(mock)
@@ -88,69 +88,7 @@ func TestList_DBError(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Contains(t, w.Body.String(), "Error loading pastes")
-}
-
-func TestList_EmptyTitleFallback(t *testing.T) {
-	mock := &testutil.MockStore{
-		ListPastesFunc: func(limit int) ([]*models.Paste, error) {
-			return []*models.Paste{
-				{Slug: "abc", Title: "", Content: "first line of content\nsecond line", CreatedAt: time.Now()},
-			}, nil
-		},
-	}
-	_, r := setupTestRouter(mock)
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/", nil)
-	r.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "first line of content")
-}
-
-func TestList_LongContentTruncation(t *testing.T) {
-	longLine := ""
-	for i := 0; i < 100; i++ {
-		longLine += "x"
-	}
-	mock := &testutil.MockStore{
-		ListPastesFunc: func(limit int) ([]*models.Paste, error) {
-			return []*models.Paste{
-				{Slug: "abc", Title: "", Content: longLine, CreatedAt: time.Now()},
-			}, nil
-		},
-	}
-	_, r := setupTestRouter(mock)
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/", nil)
-	r.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "xxx...")
-	assert.NotContains(t, w.Body.String(), longLine)
-}
-
-func TestList_ExpiryFormatting(t *testing.T) {
-	expiresAt := time.Date(2026, 6, 15, 10, 30, 0, 0, time.UTC)
-	mock := &testutil.MockStore{
-		ListPastesFunc: func(limit int) ([]*models.Paste, error) {
-			return []*models.Paste{
-				{Slug: "a", Title: "Has Expiry", Content: "c", CreatedAt: time.Now(), ExpiresAt: &expiresAt},
-				{Slug: "b", Title: "No Expiry", Content: "c", CreatedAt: time.Now(), ExpiresAt: nil},
-			}, nil
-		},
-	}
-	_, r := setupTestRouter(mock)
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/", nil)
-	r.ServeHTTP(w, req)
-
-	body := w.Body.String()
-	assert.Contains(t, body, "2026-06-15 10:30")
-	assert.Contains(t, body, "never")
+	assert.Contains(t, w.Body.String(), "Error loading stats")
 }
 
 func TestView_Found(t *testing.T) {

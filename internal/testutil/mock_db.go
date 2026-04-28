@@ -8,15 +8,16 @@ import (
 )
 
 type MockStore struct {
-	CreatePasteFunc  func(paste *models.Paste) error
-	GetPasteFunc     func(id string) (*models.Paste, error)
-	ListPastesFunc   func(limit int) ([]*models.Paste, error)
-	DeletePasteFunc  func(id string) error
+	CreatePasteFunc   func(paste *models.Paste) error
+	GetPasteFunc      func(id string) (*models.Paste, error)
+	ListPastesFunc    func(limit int) ([]*models.Paste, error)
+	DeletePasteFunc   func(id string) error
 	DeleteExpiredFunc func() (int64, error)
-	CreateAPIKeyFunc func(description string) (*db.APIKey, error)
-	GetAPIKeyFunc    func(key string) (*db.APIKey, error)
-	ListAPIKeysFunc  func() ([]*db.APIKey, error)
-	DeleteAPIKeyFunc func(key string) error
+	CountPastesFunc   func() (*db.PasteStats, error)
+	CreateAPIKeyFunc  func(description string) (*db.APIKey, error)
+	GetAPIKeyFunc     func(key string) (*db.APIKey, error)
+	ListAPIKeysFunc   func() ([]*db.APIKey, error)
+	DeleteAPIKeyFunc  func(key string) error
 }
 
 func (m *MockStore) CreatePaste(paste *models.Paste) error {
@@ -52,6 +53,13 @@ func (m *MockStore) DeleteExpired() (int64, error) {
 		return m.DeleteExpiredFunc()
 	}
 	return 0, fmt.Errorf("DeleteExpired not mocked")
+}
+
+func (m *MockStore) CountPastes() (*db.PasteStats, error) {
+	if m.CountPastesFunc != nil {
+		return m.CountPastesFunc()
+	}
+	return &db.PasteStats{}, nil
 }
 
 func (m *MockStore) CreateAPIKey(description string) (*db.APIKey, error) {

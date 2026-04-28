@@ -317,3 +317,34 @@ func TestDeleteExpired_NullExpiresAtPreserved(t *testing.T) {
 	_, err = db.GetPaste("forever")
 	assert.NoError(t, err, "paste with NULL expires_at should not be deleted")
 }
+
+func TestCountPastes(t *testing.T) {
+	db := newTestDB(t)
+	future := time.Now().Add(1 * time.Hour)
+	past := time.Now().Add(-1 * time.Hour)
+
+	stats, err := db.CountPastes()
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), stats.Total)
+	assert.Equal(t, int64(0), stats.Active)
+	assert.Equal(t, int64(0), stats.Expired)
+
+	noExpiry := &models.Paste{
+		Slug: "noexpire", Content: "forever", CreatedAt: time.Now(), Language: "markdown",
+	}
+	withFutureExpiry := &models.Paste{
+		Slug: "future", Content: "stay", CreatedAt: time.Now(), ExpiresAt: &future, Language: "markdown",
+	}
+	expired := &models.Paste{
+		Slug: "expired", Content: "gone", CreatedAt: time.Now(), ExpiresAt: &past, Language: "markdown",
+	}
+	require.NoError(t, db.CreatePaste(noExpiry))
+	require.NoError(t, db.CreatePaste(withFutureExpiry))
+	require.NoError(t, db.CreatePaste(expired))
+
+	stats, err = db.CountPastes()
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), stats.Total)
+	assert.Equal(t, int64(2), stats.Active)
+	assert.Equal(t, int64(1), stats.Expired)
+}

@@ -12,6 +12,12 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
+type PasteStats struct {
+	Total   int64
+	Active  int64
+	Expired int64
+}
+
 func (d *DB) CreatePaste(paste *models.Paste) error {
 	_, err := d.Exec(
 		`INSERT INTO pastes (slug, title, content, rendered, created_at, expires_at, language)
@@ -86,6 +92,20 @@ func (d *DB) DeleteExpired() (int64, error) {
 		return 0, fmt.Errorf("delete expired: %w", err)
 	}
 	return res.RowsAffected()
+}
+
+func (d *DB) CountPastes() (*PasteStats, error) {
+	stats := &PasteStats{}
+	err := d.QueryRow(
+		`SELECT COUNT(*),
+		       COALESCE(SUM(CASE WHEN expires_at IS NULL OR expires_at > ? THEN 1 ELSE 0 END), 0),
+		       COALESCE(SUM(CASE WHEN expires_at IS NOT NULL AND expires_at <= ? THEN 1 ELSE 0 END), 0)
+		 FROM pastes`, time.Now(), time.Now(),
+	).Scan(&stats.Total, &stats.Active, &stats.Expired)
+	if err != nil {
+		return nil, fmt.Errorf("count pastes: %w", err)
+	}
+	return stats, nil
 }
 
 func IsDuplicateSlug(err error) bool {

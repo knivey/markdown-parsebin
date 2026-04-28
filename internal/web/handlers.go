@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -13,47 +12,15 @@ import (
 )
 
 func (s *Server) handleList(c *gin.Context) {
-	pastes, err := s.DB.ListPastes(50)
+	stats, err := s.DB.CountPastes()
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Error loading pastes: %v", err)
+		c.String(http.StatusInternalServerError, "Error loading stats: %v", err)
 		return
 	}
 
-	type pasteItem struct {
-		Slug      string
-		Title     string
-		CreatedAt string
-		ExpiresAt string
-	}
-
-	items := make([]pasteItem, 0, len(pastes))
-	for _, p := range pastes {
-		title := p.Title
-		if title == "" {
-			title = "Untitled"
-			first := strings.Split(p.Content, "\n")[0]
-			if len(first) > 60 {
-				first = first[:60] + "..."
-			}
-			if title == "Untitled" && first != "" {
-				title = first
-			}
-		}
-		expires := "never"
-		if p.ExpiresAt != nil {
-			expires = p.ExpiresAt.Format("2006-01-02 15:04")
-		}
-		items = append(items, pasteItem{
-			Slug:      p.Slug,
-			Title:     title,
-			CreatedAt: p.CreatedAt.Format("2006-01-02 15:04"),
-			ExpiresAt: expires,
-		})
-	}
-
 	c.HTML(http.StatusOK, "list.html", gin.H{
-		"Title":  "dave-web",
-		"Pastes": items,
+		"Title": "dave-web",
+		"Stats": stats,
 	})
 }
 
