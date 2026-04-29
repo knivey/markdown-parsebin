@@ -97,6 +97,24 @@
     <footer>
         <p>powered by dave-web</p>
     </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.paste-content pre').forEach(function(pre) {
+                var btn = document.createElement('button');
+                btn.className = 'copy-btn';
+                btn.textContent = 'Copy';
+                btn.addEventListener('click', function() {
+                    var code = pre.querySelector('code');
+                    var text = code ? code.textContent : pre.textContent;
+                    navigator.clipboard.writeText(text).then(function() {
+                        btn.textContent = 'Copied!';
+                        setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+                    });
+                });
+                pre.appendChild(btn);
+            });
+        });
+    </script>
 </body>
 </html>
 {{end}}

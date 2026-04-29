@@ -131,6 +131,8 @@ a:hover {
     margin-bottom: 1rem;
     border-radius: 6px;
     overflow-x: auto;
+    padding: 1em;
+    position: relative;
 }
 
 .paste-content pre code {
@@ -184,6 +186,30 @@ a:hover {
 .chroma {
     font-size: 0.9rem;
     line-height: 1.5;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: transparent;
+    border: none;
+    color: #565f89;
+    font-size: 0.75rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+}
+
+.paste-content pre:hover .copy-btn {
+    opacity: 1;
+}
+
+.copy-btn:hover {
+    color: #c0caf5;
+    background: #292e42;
 }
 
 .dashboard {
