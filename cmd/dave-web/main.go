@@ -11,7 +11,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/knivey/dave-web/internal/db"
+	"github.com/knivey/dave-web/internal/models"
 	mcpserver "github.com/knivey/dave-web/internal/mcp"
+	"github.com/knivey/dave-web/internal/renderer"
 	"github.com/knivey/dave-web/internal/ttl"
 	"github.com/knivey/dave-web/internal/web"
 )
@@ -26,12 +28,14 @@ var templatesFS embed.FS
 var staticFS embed.FS
 
 var (
-	webAddr   string
-	mcpAddr   string
-	dbPath    string
-	baseURL   string
-	keyDesc   string
-	keyRevoke string
+	webAddr      string
+	mcpAddr      string
+	dbPath       string
+	baseURL      string
+	keyDesc      string
+	keyRevoke    string
+	regenSlug    string
+	regenDryRun  bool
 )
 
 func main() {
@@ -58,7 +62,7 @@ func buildRootCmd() *cobra.Command {
 	serveCmd.Flags().StringVar(&webAddr, "addr", ":8080", "Web server listen address")
 	serveCmd.Flags().StringVar(&mcpAddr, "mcp-addr", ":8081", "MCP server listen address")
 
-	rootCmd.AddCommand(serveCmd, keysCmd())
+	rootCmd.AddCommand(serveCmd, keysCmd(), regenerateCmd())
 
 	return rootCmd
 }
@@ -187,4 +191,74 @@ func keysCmd() *cobra.Command {
 
 	cmd.AddCommand(createCmd, listCmd, revokeCmd)
 	return cmd
+}
+
+func regenerateCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "regenerate",
+		Short: "Re-render HTML for pastes",
+		RunE:  runRegenerate,
+	}
+	cmd.Flags().StringVar(&regenSlug, "slug", "", "Regenerate a single paste by slug")
+	cmd.Flags().BoolVar(&regenDryRun, "dry-run", false, "Show what would be regenerated without writing")
+	return cmd
+}
+
+func runRegenerate(cmd *cobra.Command, args []string) error {
+	database, err := openDB()
+	if err != nil {
+		return fmt.Errorf("database: %w", err)
+	}
+	defer database.Close()
+
+	var pastes []*models.Paste
+
+	if regenSlug != "" {
+		p, err := database.GetPaste(regenSlug)
+		if err != nil {
+			return fmt.Errorf("paste %s: %w", regenSlug, err)
+		}
+		pastes = append(pastes, p)
+	} else {
+		pastes, err = database.ListAllPastes()
+		if err != nil {
+			return fmt.Errorf("list pastes: %w", err)
+		}
+	}
+
+	if len(pastes) == 0 {
+		fmt.Println("No pastes to regenerate.")
+		return nil
+	}
+
+	var ok, errs int
+	for _, p := range pastes {
+		rendered, err := renderer.Render(p.Content)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s ERROR: %v\n", p.Slug, err)
+			errs++
+			continue
+		}
+		if regenDryRun {
+			fmt.Printf("%s [dry-run]\n", p.Slug)
+		} else {
+			if err := database.UpdatePasteRendered(p.Slug, rendered); err != nil {
+				fmt.Fprintf(os.Stderr, "%s ERROR: %v\n", p.Slug, err)
+				errs++
+				continue
+			}
+			fmt.Println(p.Slug)
+		}
+		ok++
+	}
+
+	if regenDryRun {
+		fmt.Fprintf(os.Stderr, "\nWould regenerate %d pastes (%d errors)\n", ok, errs)
+	} else {
+		fmt.Fprintf(os.Stderr, "\nRegenerated %d pastes (%d errors)\n", ok, errs)
+	}
+	if errs > 0 {
+		return fmt.Errorf("%d errors during regeneration", errs)
+	}
+	return nil
 }

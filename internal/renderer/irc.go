@@ -115,11 +115,16 @@ type ircSegment struct {
 }
 
 func parseIRCSegments(data []byte) []ircSegment {
+	segs, _ := parseIRCSegmentsWithState(data, newIRCState())
+	return segs
+}
+
+func parseIRCSegmentsWithState(data []byte, initialState ircState) ([]ircSegment, ircState) {
 	if len(data) == 0 {
-		return nil
+		return nil, initialState
 	}
 
-	state := newIRCState()
+	state := initialState
 	var segments []ircSegment
 	var buf []byte
 
@@ -209,7 +214,7 @@ func parseIRCSegments(data []byte) []ircSegment {
 	}
 
 	flush(&segments, &buf, state)
-	return segments
+	return segments, state
 }
 
 func flush(segments *[]ircSegment, buf *[]byte, state ircState) {
@@ -264,7 +269,12 @@ type ircTransformer struct{}
 func (t *ircTransformer) Transform(doc *ast.Document, reader text.Reader, pc parser.Context) {
 	source := reader.Source()
 
-	var toReplace []ast.Node
+	type textNodeInfo struct {
+		node   *ast.Text
+		parent ast.Node
+	}
+
+	var textNodes []textNodeInfo
 
 	ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
@@ -277,22 +287,27 @@ func (t *ircTransformer) Transform(doc *ast.Document, reader text.Reader, pc par
 			return ast.WalkContinue, nil
 		}
 
-		textNode := n.(*ast.Text)
-		value := textNode.Value(source)
-		if !hasIRCCodes(value) {
-			return ast.WalkContinue, nil
-		}
-
-		toReplace = append(toReplace, n)
+		textNodes = append(textNodes, textNodeInfo{
+			node:   n.(*ast.Text),
+			parent: n.Parent(),
+		})
 		return ast.WalkContinue, nil
 	})
 
-	for _, n := range toReplace {
-		textNode := n.(*ast.Text)
-		value := textNode.Value(source)
-		parent := n.Parent()
+	var currentState ircState
+	var lastParent ast.Node
 
-		segments := parseIRCSegments(value)
+	for _, info := range textNodes {
+		if info.parent != lastParent {
+			currentState = newIRCState()
+			lastParent = info.parent
+		}
+
+		textNode := info.node
+		value := textNode.Value(source)
+
+		segments, nextState := parseIRCSegmentsWithState(value, currentState)
+
 		var replacements []ast.Node
 
 		for _, seg := range segments {
@@ -312,11 +327,23 @@ func (t *ircTransformer) Transform(doc *ast.Document, reader text.Reader, pc par
 			}
 		}
 
-		for _, repl := range replacements {
-			parent.InsertBefore(parent, n, repl)
+		if textNode.HardLineBreak() || (textNode.SoftLineBreak()) {
+			replacements = append(replacements, codeString([]byte("<br />\n")))
 		}
-		parent.RemoveChild(parent, n)
+
+		for _, repl := range replacements {
+			info.parent.InsertBefore(info.parent, textNode, repl)
+		}
+		info.parent.RemoveChild(info.parent, textNode)
+
+		currentState = nextState
 	}
+}
+
+func codeString(s []byte) *ast.String {
+	n := ast.NewString(s)
+	n.SetCode(true)
+	return n
 }
 
 func buildSpanOpen(classes []string) *ast.String {

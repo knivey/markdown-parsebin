@@ -348,3 +348,63 @@ func TestCountPastes(t *testing.T) {
 	assert.Equal(t, int64(2), stats.Active)
 	assert.Equal(t, int64(1), stats.Expired)
 }
+
+func TestListAllPastes(t *testing.T) {
+	db := newTestDB(t)
+	future := time.Now().Add(1 * time.Hour)
+	past := time.Now().Add(-1 * time.Hour)
+
+	active := &models.Paste{
+		Slug: "active", Content: "stay", CreatedAt: time.Now(), ExpiresAt: &future, Language: "markdown",
+	}
+	noExpiry := &models.Paste{
+		Slug: "forever", Content: "always", CreatedAt: time.Now(), Language: "markdown",
+	}
+	expired := &models.Paste{
+		Slug: "expired", Content: "gone", CreatedAt: time.Now(), ExpiresAt: &past, Language: "markdown",
+	}
+	require.NoError(t, db.CreatePaste(active))
+	require.NoError(t, db.CreatePaste(noExpiry))
+	require.NoError(t, db.CreatePaste(expired))
+
+	pastes, err := db.ListAllPastes()
+	assert.NoError(t, err)
+	assert.Len(t, pastes, 2)
+
+	slugs := map[string]bool{}
+	for _, p := range pastes {
+		slugs[p.Slug] = true
+		assert.NotEmpty(t, p.Content)
+	}
+	assert.True(t, slugs["active"])
+	assert.True(t, slugs["forever"])
+	assert.False(t, slugs["expired"])
+}
+
+func TestListAllPastes_EmptyDB(t *testing.T) {
+	db := newTestDB(t)
+	pastes, err := db.ListAllPastes()
+	assert.NoError(t, err)
+	assert.Empty(t, pastes)
+}
+
+func TestUpdatePasteRendered(t *testing.T) {
+	db := newTestDB(t)
+	paste := &models.Paste{
+		Slug: "upd1", Content: "**bold**", Rendered: "old", CreatedAt: time.Now(), Language: "markdown",
+	}
+	require.NoError(t, db.CreatePaste(paste))
+
+	err := db.UpdatePasteRendered("upd1", "<p><strong>bold</strong></p>")
+	assert.NoError(t, err)
+
+	got, err := db.GetPaste("upd1")
+	assert.NoError(t, err)
+	assert.Equal(t, "<p><strong>bold</strong></p>", got.Rendered)
+}
+
+func TestUpdatePasteRendered_NotFound(t *testing.T) {
+	db := newTestDB(t)
+	err := db.UpdatePasteRendered("nonexistent", "html")
+	assert.NoError(t, err)
+}

@@ -108,6 +108,35 @@ func (d *DB) CountPastes() (*PasteStats, error) {
 	return stats, nil
 }
 
+func (d *DB) ListAllPastes() ([]*models.Paste, error) {
+	rows, err := d.Query(
+		`SELECT slug, content FROM pastes WHERE expires_at IS NULL OR expires_at > ?
+		 ORDER BY created_at`, time.Now(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list all pastes: %w", err)
+	}
+	defer rows.Close()
+
+	var pastes []*models.Paste
+	for rows.Next() {
+		p := &models.Paste{}
+		if err := rows.Scan(&p.Slug, &p.Content); err != nil {
+			return nil, fmt.Errorf("scan paste: %w", err)
+		}
+		pastes = append(pastes, p)
+	}
+	return pastes, rows.Err()
+}
+
+func (d *DB) UpdatePasteRendered(slug string, rendered string) error {
+	_, err := d.Exec(`UPDATE pastes SET rendered = ? WHERE slug = ?`, rendered, slug)
+	if err != nil {
+		return fmt.Errorf("update paste rendered %s: %w", slug, err)
+	}
+	return nil
+}
+
 func IsDuplicateSlug(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "duplicate slug")
 }

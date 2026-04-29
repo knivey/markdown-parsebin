@@ -192,3 +192,100 @@ func TestIRC_ControlCharsStripped(t *testing.T) {
 	assert.Contains(t, result, "text")
 	assert.Contains(t, result, "more")
 }
+
+func TestIRC_ColorCarriesAcrossSplitNodes(t *testing.T) {
+	input := "\x034red text here"
+	result, err := Render(input)
+	assert.NoError(t, err)
+	assert.Contains(t, result, `irc-fg-4`)
+	assert.Contains(t, result, "red")
+	assert.Contains(t, result, "text")
+	assert.Contains(t, result, "here")
+
+	lastSpanClose := strings.LastIndex(result, "</span>")
+	afterSpan := result[lastSpanClose+len("</span>"):]
+	afterSpan = strings.TrimSpace(afterSpan)
+	assert.NotContains(t, afterSpan, "here", "last word should be inside the colored span, not after it")
+}
+
+func TestIRC_ColorCarriesAcrossLines(t *testing.T) {
+	input := "\x034line one\nline two"
+	result, err := Render(input)
+	assert.NoError(t, err)
+	assert.Contains(t, result, "line")
+	assert.Contains(t, result, "two")
+
+	count := strings.Count(result, "irc-fg-4")
+	assert.GreaterOrEqual(t, count, 2, "both lines should have the color class")
+
+	assert.NotContains(t, result, ">one</span><br />", "line break should come after full colored text, not mid-word")
+}
+
+func TestIRC_BoldCarriesAcrossSplitNodes(t *testing.T) {
+	input := "\x02bold text here"
+	result, err := Render(input)
+	assert.NoError(t, err)
+	assert.Contains(t, result, "irc-bold")
+	assert.Contains(t, result, "bold")
+	assert.Contains(t, result, "text")
+	assert.Contains(t, result, "here")
+
+	lastSpanClose := strings.LastIndex(result, "</span>")
+	afterSpan := result[lastSpanClose+len("</span>"):]
+	afterSpan = strings.TrimSpace(afterSpan)
+	assert.NotContains(t, afterSpan, "here", "last word should be inside the bold span")
+}
+
+func TestIRC_ResetStopsCarryAcrossLines(t *testing.T) {
+	input := "\x034red\x0f\nplain line"
+	result, err := Render(input)
+	assert.NoError(t, err)
+	assert.Contains(t, result, "irc-fg-4")
+	assert.Contains(t, result, "red")
+	assert.Contains(t, result, "plain line")
+
+	body := result[strings.Index(result, "red")+3:]
+	plainIdx := strings.Index(body, "plain line")
+	beforePlain := body[:plainIdx]
+	assert.NotContains(t, beforePlain, "irc-fg-4", "text after reset should not carry color")
+}
+
+func TestIRC_SoftLineBreakPreserved(t *testing.T) {
+	input := "\x034line one\nline two"
+	result, err := Render(input)
+	assert.NoError(t, err)
+	assert.Contains(t, result, "<br />")
+}
+
+func TestIRC_ExactBugReproducer(t *testing.T) {
+	input := "\x034 Tune in next week, phil! Heh, those mud people never stood a chance."
+	result, err := Render(input)
+	assert.NoError(t, err)
+	assert.Contains(t, result, "chance.")
+	assert.Contains(t, result, "irc-fg-4")
+
+	lastSpanClose := strings.LastIndex(result, "</span>")
+	afterSpan := result[lastSpanClose+len("</span>"):]
+	afterSpan = strings.TrimSpace(afterSpan)
+	afterSpan = strings.TrimSuffix(afterSpan, "</p>")
+	afterSpan = strings.TrimSpace(afterSpan)
+	assert.Empty(t, afterSpan, "no text should appear after the last </span>: got %q", afterSpan)
+}
+
+func TestParseIRCSegmentsWithState_InheritedColor(t *testing.T) {
+	initial := ircState{fg: 4}
+	segs, finalState := parseIRCSegmentsWithState([]byte("plain text"), initial)
+	assert.Equal(t, 1, len(segs))
+	assert.Equal(t, "plain text", string(segs[0].text))
+	assert.Equal(t, 4, segs[0].state.fg)
+	assert.Equal(t, 4, finalState.fg)
+}
+
+func TestParseIRCSegmentsWithState_Reset(t *testing.T) {
+	initial := ircState{fg: 4, bold: true}
+	segs, finalState := parseIRCSegmentsWithState([]byte("\x0fplain"), initial)
+	assert.Equal(t, 1, len(segs))
+	assert.Equal(t, "plain", string(segs[0].text))
+	assert.False(t, finalState.bold)
+	assert.Equal(t, -1, finalState.fg)
+}
