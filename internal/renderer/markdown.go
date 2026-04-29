@@ -32,6 +32,7 @@ func init() {
 				highlighting.WithStyle("dracula"),
 				highlighting.WithFormatOptions(),
 			),
+			IRCExtension,
 		),
 		goldmark.WithRendererOptions(
 			html.WithHardWraps(),
