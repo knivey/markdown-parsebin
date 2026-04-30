@@ -125,6 +125,8 @@ a:hover {
     border-radius: 3px;
     font-size: 0.9em;
     color: #f7768e;
+    font-family: "Fira Code", monospace;
+    font-variant-ligatures: none;
 }
 
 .paste-content pre {
@@ -133,6 +135,8 @@ a:hover {
     overflow-x: auto;
     padding: 1em;
     position: relative;
+    font-family: "Fira Code", monospace;
+    font-variant-ligatures: none;
 }
 
 .paste-content pre code {
@@ -184,6 +188,13 @@ a:hover {
 }
 
 .chroma {
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.paste-content pre:not(.chroma) {
+    background: #282a36;
+    color: #f8f8f2;
     font-size: 0.9rem;
     line-height: 1.5;
 }
