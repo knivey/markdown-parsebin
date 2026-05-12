@@ -1,6 +1,6 @@
 # MCP Integration
 
-dave-web includes an MCP (Model Context Protocol) server that exposes paste management as tools for AI agents. The server communicates over HTTP/SSE and is started automatically with the `serve` command.
+dave-web includes an MCP (Model Context Protocol) server that exposes paste management as tools for AI agents. The server uses the Streamable HTTP transport and is started automatically with the `serve` command.
 
 ## Starting the MCP server
 
@@ -12,17 +12,16 @@ The MCP server runs on the port specified by `--mcp-addr` (default `:8081`) in t
 
 ## Connecting a client
 
-The MCP server exposes two HTTP endpoints:
+The MCP server exposes a single endpoint using the Streamable HTTP transport:
 
-| Path | Purpose |
-|------|---------|
-| `/sse` | SSE stream for server-to-client messages |
-| `/message` | HTTP POST for client-to-server messages |
+| Path  | Methods             | Purpose                                      |
+|-------|---------------------|----------------------------------------------|
+| `/mcp` | GET, POST, DELETE  | Streamable HTTP transport for all MCP messages |
 
-Configure your MCP client with the SSE URL:
+Configure your MCP client with the endpoint URL:
 
 ```
-http://localhost:8081/sse
+http://localhost:8081/mcp
 ```
 
 ### Example client configuration
@@ -33,7 +32,10 @@ For clients that use a JSON config file:
 {
   "mcpServers": {
     "dave-web": {
-      "url": "http://localhost:8081/sse"
+      "url": "http://localhost:8081/mcp",
+      "headers": {
+        "X-API-Key": "your-api-key-here"
+      }
     }
   }
 }
@@ -128,7 +130,7 @@ Paste aB3xK9Qm deleted
 
 ## Authentication
 
-The MCP message endpoint (`/message`) requires an API key in the `X-API-Key` header. The SSE endpoint (`/sse`) does not require authentication (it is read-only event stream). API keys are the same ones used by the REST API and managed via the `keys` CLI subcommands.
+All requests to the `/mcp` endpoint require an API key in the `X-API-Key` header. API keys are the same ones used by the REST API and managed via the `keys` CLI subcommands.
 
 MCP clients must be configured to send the `X-API-Key` header with each request. Not all MCP clients support custom headers — check your client's documentation.
 

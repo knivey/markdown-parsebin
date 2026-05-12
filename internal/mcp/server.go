@@ -177,26 +177,18 @@ func (m *MCPServer) handleDelete(ctx context.Context, req mcp.CallToolRequest) (
 	return mcp.NewToolResultText(fmt.Sprintf("Paste %s deleted", slug)), nil
 }
 
-func (m *MCPServer) Run(addr, mcpBaseURL string) error {
-	sseServer := server.NewSSEServer(m.mcpServer, server.WithBaseURL(mcpBaseURL))
+func (m *MCPServer) Run(addr string) error {
+	httpServer := server.NewStreamableHTTPServer(m.mcpServer)
 
 	mux := http.NewServeMux()
-	mux.Handle("/sse", sseServer.SSEHandler())
-	mux.Handle("/message", sseServer.MessageHandler())
-
-	var handler http.Handler = mux
-	handler = m.requireAPIKey(handler)
+	mux.Handle("/mcp", m.requireAPIKey(httpServer))
 
 	log.Printf("MCP server listening on %s", addr)
-	return http.ListenAndServe(addr, handler)
+	return http.ListenAndServe(addr, mux)
 }
 
 func (m *MCPServer) requireAPIKey(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/sse" {
-			next.ServeHTTP(w, r)
-			return
-		}
 		key := r.Header.Get("X-API-Key")
 		if key == "" {
 			http.Error(w, "missing X-API-Key header", http.StatusUnauthorized)
