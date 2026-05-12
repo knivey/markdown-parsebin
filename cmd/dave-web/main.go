@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -30,6 +32,7 @@ var staticFS embed.FS
 var (
 	webAddr      string
 	mcpAddr      string
+	mcpBaseURL   string
 	dbPath       string
 	baseURL      string
 	keyDesc      string
@@ -61,6 +64,7 @@ func buildRootCmd() *cobra.Command {
 	}
 	serveCmd.Flags().StringVar(&webAddr, "addr", ":8080", "Web server listen address")
 	serveCmd.Flags().StringVar(&mcpAddr, "mcp-addr", ":8081", "MCP server listen address")
+	serveCmd.Flags().StringVar(&mcpBaseURL, "mcp-base-url", "", "Base URL for MCP SSE endpoint (derived from --base-url if empty)")
 
 	rootCmd.AddCommand(serveCmd, keysCmd(), regenerateCmd())
 
@@ -87,6 +91,16 @@ func getStaticFS() fs.FS {
 	return sub
 }
 
+func deriveMCPBaseURL(baseURL, mcpAddr string) string {
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		log.Fatalf("invalid --base-url %q: %v", baseURL, err)
+	}
+	port := strings.TrimPrefix(mcpAddr, ":")
+	u.Host = u.Hostname() + ":" + port
+	return u.String()
+}
+
 func runServe(cmd *cobra.Command, args []string) error {
 	database, err := openDB()
 	if err != nil {
@@ -96,9 +110,14 @@ func runServe(cmd *cobra.Command, args []string) error {
 
 	ttl.StartCleaner(database, 5*time.Minute)
 
+	resolvedMCPBaseURL := mcpBaseURL
+	if resolvedMCPBaseURL == "" {
+		resolvedMCPBaseURL = deriveMCPBaseURL(baseURL, mcpAddr)
+	}
+
 	mcpSrv := mcpserver.NewMCPServer(database, baseURL)
 	go func() {
-		if err := mcpSrv.Run(mcpAddr); err != nil {
+		if err := mcpSrv.Run(mcpAddr, resolvedMCPBaseURL); err != nil {
 			log.Fatalf("MCP server error: %v", err)
 		}
 	}()

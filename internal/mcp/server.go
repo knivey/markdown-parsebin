@@ -177,8 +177,8 @@ func (m *MCPServer) handleDelete(ctx context.Context, req mcp.CallToolRequest) (
 	return mcp.NewToolResultText(fmt.Sprintf("Paste %s deleted", slug)), nil
 }
 
-func (m *MCPServer) Run(addr string) error {
-	sseServer := server.NewSSEServer(m.mcpServer, server.WithBaseURL(fmt.Sprintf("http://localhost%s", addr)))
+func (m *MCPServer) Run(addr, mcpBaseURL string) error {
+	sseServer := server.NewSSEServer(m.mcpServer, server.WithBaseURL(mcpBaseURL))
 
 	mux := http.NewServeMux()
 	mux.Handle("/sse", sseServer.SSEHandler())
